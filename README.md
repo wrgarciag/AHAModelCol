@@ -1,6 +1,6 @@
 # AHAModelCol
 
-This model is part of an AH granted research program that will advance the field of policy IS for CVD by
+This model is part of an AHA granted research program that will advance the field of policy IS for CVD by
 improving the alignment of the data generation/analysis cycle and the policy cycle in LICs and MICs.
 In particular, this is a proof-of-concept decision support tool that links routine data to policy analysis.
 
