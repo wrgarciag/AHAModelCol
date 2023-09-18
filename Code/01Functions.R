@@ -1,3 +1,12 @@
+
+##William----
+
+
+
+
+
+### Sarah----
+
 get.bp.prob<-function(DT, salteff, saltmet, saltyear1, saltyear2, rx, drugaroc){
   
   if(rx==1 & drugaroc =="baseline"){
