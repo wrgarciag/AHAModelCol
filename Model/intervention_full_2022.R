@@ -3,7 +3,8 @@
 ###########################################
 rm(list=ls()) 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-setwd("../data_preprocessing")
+#setwd("../data_preprocessing")
+setwd(paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/AHAModelCol/Data/"))
 #################################################################################################
 
 #libraries
@@ -37,7 +38,8 @@ names<-read.csv("Country_groupings_extended.csv", stringsAsFactors = F)%>%
 #add covid mx data
 load("wpp.adj.Rda")
 #Covid mx ~= excess mortality
-b_rates<-fread("base_rates_2022.csv")
+#b_rates<-fread("base_rates_2022.csv")
+b_rates<-fread("global_rates.csv")
 b_rates<-left_join(b_rates, wpp.adj%>%
                      rename(location = location_name)%>%
                      select( -Nx, -mx, -iso3))
@@ -91,7 +93,7 @@ data.in<-fread("bp_data6.csv")%>%rename(location = location_gbd)%>%select(-Year,
 data.in$salt[data.in$location=="China"]<-4.83*2.54
 length(unique(data.in$location))
 
-setwd("../model")
+setwd(paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/AHAModelCol/Model/"))
 
 #add scale-up data
 inc<-read.csv("covfxn2.csv", stringsAsFactors = F)%>%
@@ -106,7 +108,7 @@ data.in<-merge(bpcats, data.in)%>%rename(bp_cat = x)
 
 
 #source("functions_review_4.R")
-source("functions_review_6.R")
+source(paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/AHAModelCol/Code/NaturePublished/functions_review_6.R"))
 
 #ref<-fread("global_pop_0122.csv")
 #check rates
@@ -484,7 +486,7 @@ unique(wpp.pop$location)
 wpp.names<-read.csv("Country_groupings_extended.csv", stringsAsFactors = F)%>%
   select(wb2021, location_who, location_gbd)%>%rename(location = location_who)
 
-wpp.names$location[wpp.names$location=="Côte d'Ivoire"]<-"C�te d'Ivoire"
+wpp.names$location[wpp.names$location=="Côte d'Ivoire"]<-"C?te d'Ivoire"
 
 wpp.pop<-left_join(wpp.pop, wpp.names)%>%rename(loc = location, location = location_gbd)
 wpp.pop$location[wpp.pop$loc=="WORLD"]<-"World"
