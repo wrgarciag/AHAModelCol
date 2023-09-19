@@ -4,29 +4,84 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
+wd <- "C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/AHAModelCol/"
+
+wd_c <- paste0(wd,"Code/")
+#wd_d <- paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/Data/")
+wd_inpu <- paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/Data/")
+wd_proc <- paste0(wd,"/Data/")
+wd_r <- paste0(wd,"Resu/")
+
+#libraries
+library(dplyr)
+library(data.table)
+library(tidyr)
+library(ggplot2)
+library(doParallel)
+library(readxl)
+library(knitr)
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+We group CVD dagnostics accordinto the following ICD diagnostics
+
+```{r dx , echo=FALSE}
+#dx <- fread(paste0(wd_inpu,"ICD10Codes.csv"))
+dx  <- as.data.table(read_excel(paste0(wd_inpu,"ICD10Codes.xlsx")))
+kable(dx,caption='ICD codes for causes')
 ```
 
 ## Demography
 
-### dfew
+### Population projections
 <!-- This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>. -->
 
 <!-- When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this: -->
 
-```{r cars}
-summary(cars)
-```
-
 ## Epidemiology
 
-You can also embed plots, for example:
+This section shows the prevalence and infection rates raw data and estimation for 2019.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+<!-- Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot. -->
 
 ## Economic evaluation
+
+This section shows the cost raw data and estimation for 2019. We estimate the average cost per person in a year.
+
+### Female cost
+
+```{r econ.cost.f, echo=FALSE}
+cost_iy_combined <- readRDS(file = paste0(wd_proc,"CostCombined2019.rds"))
+
+exr <- 3277
+
+cost_iy_combined[,PromedioUSD:=Promedio/exr]
+
+p <- ggplot(data=cost_iy_combined[Sexo=='F'], aes(x=gedad_upc, y=PromedioUSD, fill=cause)) +
+  geom_bar(stat="identity", position=position_dodge())
+p <- p +labs(title="",
+             x ="Age", y = "Cost (US Dollars No PPP adjusted)")
+p <- p + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+p
+
+```
+
+### Male cost
+
+```{r econ.cost.m, echo=FALSE}
+cost_iy_combined <- readRDS(file = paste0(wd_proc,"CostCombined2019.rds"))
+
+exr <- 3277
+
+cost_iy_combined[,PromedioUSD:=Promedio/exr]
+p <- ggplot(data=cost_iy_combined[Sexo=='M'], aes(x=gedad_upc, y=PromedioUSD, fill=cause)) +
+  geom_bar(stat="identity", position=position_dodge())
+p <- p +labs(title="",
+             x ="Age", y = "Cost (US Dollars No PPP adjusted)")
+p <- p + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+p
+
+```
 
