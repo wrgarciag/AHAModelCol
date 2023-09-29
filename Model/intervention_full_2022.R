@@ -14,6 +14,14 @@ library(tidyr)
 library(ggplot2)
 library(RColorBrewer)
 
+wd <- "C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/AHAModelCol/"
+
+wd_c <- paste0(wd,"Code/")
+#wd_d <- paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/Data/")
+wd_dinpu <- paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/Data/")
+wd_dproc <- paste0(wd,"Data/")
+wd_r <- paste0(wd,"Resu/")
+
 #################################################################################################
 countrylist <- read.csv("super_regions.csv", stringsAsFactors=FALSE)%>%filter(location!="Global", 
                                                                               location!="American Samoa",
@@ -38,8 +46,10 @@ names<-read.csv("Country_groupings_extended.csv", stringsAsFactors = F)%>%
 #add covid mx data
 load("wpp.adj.Rda")
 #Covid mx ~= excess mortality
-#b_rates<-fread("base_rates_2022.csv")
-b_rates<-fread("global_rates.csv")
+b_rates <- read.csv(file=paste0(wd_dinpu,"base_rates_2022.csv"))
+b_rates <- as.data.table(b_rates)
+b_rates <- b_rates[location %in% c('Colombia','Uganda'),]
+
 b_rates<-left_join(b_rates, wpp.adj%>%
                      rename(location = location_name)%>%
                      select( -Nx, -mx, -iso3))
@@ -108,7 +118,7 @@ data.in<-merge(bpcats, data.in)%>%rename(bp_cat = x)
 
 
 #source("functions_review_4.R")
-source(paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/AHAModelCol/Code/NaturePublished/functions_review_6.R"))
+source(paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/AHAModelCol/Model/functions_review_6.R"))
 
 #ref<-fread("global_pop_0122.csv")
 #check rates
@@ -342,7 +352,7 @@ project.all <- function(Country, saltmet, salteff, saltyear2, drugcov){
 
 #test that it doesn't crash before running for ~15 mins
 #this takes ~15 seconds
-test<-project.all("China",  "percent", 0.3, 2027, "p975")
+test<-project.all("Colombia",  "percent", 0.3, 2027, "p975")
 p<-test%>%group_by(year, intervention)%>%
   summarise(dead = sum(dead),
             sick=sum(sick))

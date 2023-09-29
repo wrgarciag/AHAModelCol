@@ -36,6 +36,12 @@ rm(dane_pop)
 ## 1.2 nqx-----
 ###.................
 
+# Mortality counts 2015-2019
+
+nmx <- fread(paste0())
+
+
+
 ###.................
 # 2. Epidemiologic-----
 ###.................

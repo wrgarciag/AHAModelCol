@@ -4,12 +4,13 @@ rm(list = ls())
 # 0 Macros
 #.............................................................................
 
+
 wd <- "C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/AHAModelCol/"
 
 wd_c <- paste0(wd,"Code/")
 #wd_d <- paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/Data/")
-wd_inpu <- paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/Data/")
-wd_proc <- paste0(wd,"/Data/")
+wd_dinpu <- paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/Data/")
+wd_dproc <- paste0(wd,"/Data/")
 wd_r <- paste0(wd,"Resu/")
 
 #libraries
