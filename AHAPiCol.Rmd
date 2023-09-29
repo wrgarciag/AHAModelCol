@@ -8,8 +8,8 @@ wd <- "C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/AHAModelCol/"
 
 wd_c <- paste0(wd,"Code/")
 #wd_d <- paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/Data/")
-wd_inpu <- paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/Data/")
-wd_proc <- paste0(wd,"/Data/")
+wd_dinpu <- paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/Data/")
+wd_dproc <- paste0(wd,"/Data/")
 wd_r <- paste0(wd,"Resu/")
 
 #libraries
@@ -20,7 +20,13 @@ library(ggplot2)
 library(doParallel)
 library(readxl)
 library(knitr)
+library(plotly)
 knitr::opts_chunk$set(echo = TRUE)
+
+#Parameters
+
+# Exchange rate
+exr <- 3277
 ```
 
 ## Introduction
@@ -29,7 +35,7 @@ We group CVD dagnostics accordinto the following ICD diagnostics
 
 ```{r dx , echo=FALSE}
 #dx <- fread(paste0(wd_inpu,"ICD10Codes.csv"))
-dx  <- as.data.table(read_excel(paste0(wd_inpu,"ICD10Codes.xlsx")))
+dx  <- as.data.table(read_excel(paste0(wd_dinpu,"ICD10Codes.xlsx")))
 kable(dx,caption='ICD codes for causes')
 ```
 
@@ -40,23 +46,75 @@ kable(dx,caption='ICD codes for causes')
 
 <!-- When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this: -->
 
+We use DANE's official population projections for 2024 - 2050 instead UN-WPP median estimates. Here some descriptive statistics
+
+```{r pop_tot, echo=FALSE}
+knitr::include_graphics(paste0(wd_r,"population_source_2050.png"))
+
+```
+
+
 ## Epidemiology
 
 This section shows the prevalence and infection rates raw data and estimation for 2019.
 
+### Mortality rates
+
+We use DANE's official population estimates and death counts for 2015-2019 to estimate death probabilities by cause, age and sex. Here some descriptive statistics:
+
+### Male nqx
+
+```{r epi.nqx.male.f, echo=FALSE}
+Nx <- as.data.table(readRDS(file = paste0(wd_dinpu,"PopCounts1519.rds")))
+Nx <-  Nx[,list(Nx=sum(population)),by=list(region1,sex,gage_5)]
+
+nmx <- readRDS(file = paste0(wd_dinpu,"DeathCounts1519.rds"))
+nmx <- nmx[,list(Mx=sum(deaths)),by=list(region1,sex,gage_5,cause)]  
+nmx_bg <- merge(Nx,nmx,by=c('region1','sex','gage_5'),all.x = T)
+
+nmx_bg[,MortalityRate:=log(Mx/Nx*1000)]
+
+p <- ggplot(nmx_bg[sex=="Male",], aes(x=gage_5, y=MortalityRate, group=cause,colour=cause)) +
+   geom_line(aes(linetype=cause))+
+   facet_wrap(vars(region1), ncol = 6)
+p <- p +labs(title="Mortality rates by region, age and cause (Males)",
+             x ="Age", y = "log Mortality Rate * 1,000")
+
+ggplotly(p)
+
+```
+
+```{r epi.nqx.female.f, echo=FALSE}
+Nx <- as.data.table(readRDS(file = paste0(wd_dinpu,"PopCounts1519.rds")))
+Nx <-  Nx[,list(Nx=sum(population)),by=list(region1,sex,gage_5)]
+
+nmx <- readRDS(file = paste0(wd_dinpu,"DeathCounts1519.rds"))
+nmx <- nmx[,list(Mx=sum(deaths)),by=list(region1,sex,gage_5,cause)]  
+nmx_bg <- merge(Nx,nmx,by=c('region1','sex','gage_5'),all.x = T)
+
+nmx_bg[,MortalityRate:=log(Mx/Nx*1000)]
+
+p <- ggplot(nmx_bg[sex=="Female",], aes(x=gage_5, y=MortalityRate, group=cause,colour=cause)) +
+   geom_line(aes(linetype=cause))+
+   facet_wrap(vars(region1), ncol = 6)
+p <- p +labs(title="Mortality rates by region, age and cause (Female)",
+             x ="Age", y = "log Mortality Rate * 1,000")
+
+ggplotly(p)
+
+```
 <!-- Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot. -->
 
 ## Economic evaluation
 
-This section shows the cost raw data and estimation for 2019. We estimate the average cost per person in a year.
+This section shows the cost raw data and estimation for 2019. We estimate the average cost per person in a year using claims data from peopled insured in the Contributory regime. 
 
 ### Female cost
 
 ```{r econ.cost.f, echo=FALSE}
-cost_iy_combined <- readRDS(file = paste0(wd_proc,"CostCombined2019.rds"))
+cost_iy_combined <- readRDS(file = paste0(wd_dproc,"CostCombined2019.rds"))
 
-exr <- 3277
-
+print(paste("Exchange Rate USD/COP 2019",exr, sep= ""))
 cost_iy_combined[,PromedioUSD:=Promedio/exr]
 
 p <- ggplot(data=cost_iy_combined[Sexo=='F'], aes(x=gedad_upc, y=PromedioUSD, fill=cause)) +
@@ -64,16 +122,14 @@ p <- ggplot(data=cost_iy_combined[Sexo=='F'], aes(x=gedad_upc, y=PromedioUSD, fi
 p <- p +labs(title="",
              x ="Age", y = "Cost (US Dollars No PPP adjusted)")
 p <- p + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-p
+ggplotly(p)
 
 ```
 
 ### Male cost
 
 ```{r econ.cost.m, echo=FALSE}
-cost_iy_combined <- readRDS(file = paste0(wd_proc,"CostCombined2019.rds"))
-
-exr <- 3277
+cost_iy_combined <- readRDS(file = paste0(wd_dproc,"CostCombined2019.rds"))
 
 cost_iy_combined[,PromedioUSD:=Promedio/exr]
 p <- ggplot(data=cost_iy_combined[Sexo=='M'], aes(x=gedad_upc, y=PromedioUSD, fill=cause)) +
@@ -81,7 +137,8 @@ p <- ggplot(data=cost_iy_combined[Sexo=='M'], aes(x=gedad_upc, y=PromedioUSD, fi
 p <- p +labs(title="",
              x ="Age", y = "Cost (US Dollars No PPP adjusted)")
 p <- p + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-p
+
+ggplotly(p)
 
 ```
 

@@ -1,6 +1,82 @@
 
 ##William----
 
+categorize_age <- function(age,option="5year"){
+  
+  if(option=="5year"){
+    gedad <- cut(age,breaks = c(-Inf,1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,Inf),
+                 labels = c(0,1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80),
+                 right = FALSE)
+    
+  }else if("upc"){
+    
+    gedad <- cut(age,breaks = c(-Inf,1,5,15,19,45,50,55,60,65,70,75,Inf),
+                     labels = c("01.0","02.1-4","03.5-14","04.15-18","05.19-44","06.45-49","07.50-54",
+                                "08.55-59","09.60-64","10.65-69","11.70-74","12.75+"),
+                     right = FALSE)
+  }else{
+    
+    warning("Invalid age categorizing option")
+    return(NULL)
+  }
+  
+}
+
+# Define a function to calculate the life table
+calculate_life_table <- function(mortality_data) {
+  # Create an empty life table data.table
+  life_table <- c()
+  
+  # Initialize variables
+  n <- nrow(mortality_data)
+  qx <- numeric(n)
+  lx <- numeric(n)
+  Lx <- numeric(n)
+  Tx <- numeric(n)
+  dx <- numeric(n)
+  LxTx <- numeric(n)
+  Tpx <- numeric(n)
+  
+  # Calculate life table values
+  for (i in 1:n) {
+    if (i == 1) {
+      lx[i] <- 1000  # Initial population (e.g., 1000 at age 0)
+    } else {
+      lx[i] <- lx[i - 1] - dx[i - 1]
+    }
+    
+    qx[i] <- mortality_data[i, MortalityRate]
+    dx[i] <- lx[i] * qx[i]
+    
+    if (i == 1) {
+      Lx[i] <- lx[i] / 2
+    } else {
+      Lx[i] <- lx[i - 1] + (lx[i] + lx[i - 1]) / 2
+    }
+    
+    Tx[i] <- sum(Lx)
+    LxTx[i] <- Lx[i] * Tx[i]
+    Tpx[i] <- LxTx[i] / Lx[1]
+  }
+  
+  # Populate the life table data.table
+  life_table$Age <- mortality_data$Age
+  life_table$qx <- qx
+  life_table$lx <- lx
+  life_table$Lx <- Lx
+  life_table$Tx <- Tx
+  life_table$dx <- dx
+  life_table$LxTx <- LxTx
+  life_table$Tpx <- Tpx
+  
+  life_table <- as.data.table(life_table)
+  return(life_table)
+}
+
+# Calculate the life table using the sample mortality data
+life_table_result <- calculate_life_table(mortality_data)
+print(life_table_result)
+
 
 
 
