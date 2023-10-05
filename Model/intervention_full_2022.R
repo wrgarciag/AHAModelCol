@@ -48,7 +48,9 @@ load("wpp.adj.Rda")
 #Covid mx ~= excess mortality
 b_rates <- read.csv(file=paste0(wd_dinpu,"base_rates_2022.csv"))
 b_rates <- as.data.table(b_rates)
-b_rates <- b_rates[location %in% c('Colombia','Uganda'),]
+b_rates <- b_rates[location %in% c('Colombia'),]
+
+saveRDS(b_rates,file=paste0(wd_dinpu,"base_rates_2022_Col.rds"))
 
 b_rates<-left_join(b_rates, wpp.adj%>%
                      rename(location = location_name)%>%

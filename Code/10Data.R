@@ -161,7 +161,11 @@ for (ii in years){
   nmx$gage[which(nmx$GRU_ED1==21)]<-65
   nmx$gage[which(nmx$GRU_ED1==22)]<-70
   nmx$gage[which(nmx$GRU_ED1==23)]<-75
-  nmx$gage[which(nmx$GRU_ED1>=24)]<-80
+  nmx$gage[which(nmx$GRU_ED1==24)]<-80
+  nmx$gage[which(nmx$GRU_ED1==25)]<-85
+  nmx$gage[which(nmx$GRU_ED1==26)]<-90
+  nmx$gage[which(nmx$GRU_ED1==27)]<-95
+  nmx$gage[which(nmx$GRU_ED1==28)]<-95
   nmx$gage[which(nmx$GRU_ED1==29)]<-NA
   
   nmx <- nmx[,list(deaths=.N),by=list(COD_DPTO,sex,gage,CVD)]
@@ -189,12 +193,36 @@ rm(dnmx,nmx)
 ## 2.1 prevalence-----
 ###.................
 
-prev_ihd <- as.data.table(read_excel(paste0(wd_inpu,"2EAcemiENT_IHD_Resu.xlsx"), sheet = "Costos_EdadSexo"))
+# Create a list of file names and corresponding causes
+file_names <- c("2EAcemiENT_IHD_Resu.xlsx", "2EAcemiENT_HSTR_Resu.xlsx", "2EAcemiENT_ISTR_Resu.xlsx")
+causes <- c("ihd", "hstroke", "istroke")
 
-# cf_ihd <- 0.001
-# cf_hhd <- 0.0005
-# cf_istr <- 0.00025
-# cf_hstr <- 0.00025
+# Create an empty list to store the data tables
+prev_tables <- list()
+
+# Loop through the files and read them into data tables
+for (i in 1:length(file_names)) {
+  file_path <- paste0(wd_dinpu, file_names[i])
+  sheet_name <- "Prevalencia_GEdadUpcSexo"
+  
+  # Read the Excel file into a data table
+  prev_data <- as.data.table(read_excel(file_path, sheet = sheet_name))
+  
+  # Add a 'cause' column with the corresponding cause
+  prev_data[, cause := causes[i]]
+  
+  # Append the data table to the list
+  prev_tables[[i]] <- prev_data
+}
+
+# Combine all data tables into a single data table
+combined_prev_data <- rbindlist(prev_tables)
+
+combined_prev_data <- combined_prev_data[anio==2019,]
+
+combined_prev_data[,Sexo:=ifelse(Sexo=="M","Male","Female")]
+saveRDS(combined_prev_data,file = paste0(wd_dproc,"PrevCombined2019.rds"))
+
 
 ###.................
 ## 2.2 incidence-----
@@ -208,14 +236,14 @@ prev_ihd <- as.data.table(read_excel(paste0(wd_inpu,"2EAcemiENT_IHD_Resu.xlsx"),
 ## 3.1 Costs-----
 ###.................
 
-cost_ihd  <- as.data.table(read_excel(paste0(wd_inpu,"2EAcemiENT_IHD_Resu.xlsx"), sheet = "Costos_EdadSexo"))
+cost_ihd  <- as.data.table(read_excel(paste0(wd_dinpu,"2EAcemiENT_IHD_Resu.xlsx"), sheet = "Costos_EdadSexo"))
 cost_ihd[,cause:="ihd"]
-cost_hstr <- as.data.table(read_excel(paste0(wd_inpu,"2EAcemiENT_HSTR_Resu.xlsx"), sheet = "Costos_EdadSexo"))
+cost_hstr <- as.data.table(read_excel(paste0(wd_dinpu,"2EAcemiENT_HSTR_Resu.xlsx"), sheet = "Costos_EdadSexo"))
 cost_hstr[,cause:="hstroke"]
-cost_istr <- as.data.table(read_excel(paste0(wd_inpu,"2EAcemiENT_ISTR_Resu.xlsx"), sheet = "Costos_EdadSexo"))
+cost_istr <- as.data.table(read_excel(paste0(wd_dinpu,"2EAcemiENT_ISTR_Resu.xlsx"), sheet = "Costos_EdadSexo"))
 cost_istr[,cause:="istroke"]
 
-cost_sys <- fread(paste0(wd_inpu,"2EAcemiENT_IHD_CostoSistemaUpc.csv"))
+cost_sys <- fread(paste0(wd_dinpu,"2EAcemiENT_IHD_CostoSistemaUpc.csv"))
 setnames(cost_sys,old=c("Pacientes","Valor","CostoPromedio"),new=c("N","Total","Promedio"))
 cost_sys[,anio:=2019]
 cost_sys[,cause:="all"]
@@ -228,11 +256,11 @@ cost_iy_combined <- do.call(rbind, list(cost_ihd, cost_hstr, cost_istr))
 
 cost_iy_combined <- rbind(cost_iy_combined,cost_sys,fill=T)
 
-saveRDS(cost_iy_combined,file = paste0(wd_proc,"CostCombined2019.rds"))
+saveRDS(cost_iy_combined,file = paste0(wd_dproc,"CostCombined2019.rds"))
 
 #Plot
 
-cost_iy_combined <- readRDS(file = paste0(wd_proc,"CostCombined2019.rds"))
+cost_iy_combined <- readRDS(file = paste0(wd_dproc,"CostCombined2019.rds"))
 
 exr <- 3277
 

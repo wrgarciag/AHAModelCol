@@ -1,14 +1,47 @@
 
 ##William----
 
+# Define a function for cubic spline interpolation
+cubic_spline_interpolation <- function(x, y, xout) {
+  # Perform cubic spline interpolation
+  spline_result <- spline(x, y, xout = xout, method = "natural")
+  
+  # Return the interpolated values
+  return(spline_result$y)
+}
+
+
+interpolate_nmx_i <- function(nmx, ii, jj, ll) {
+  
+  if(nrow(nmx)==0){
+   int_val <- c() 
+  }else{
+    nmx_i <- nmx[cause == ii & region1 == jj & sex == ll & gage_5 >= 20, ]
+    
+    min_x <- min(nmx_i$gage_5, na.rm = TRUE)
+    max_x <- max(nmx_i$gage_5, na.rm = TRUE)
+    x <- nmx_i$gage_5
+    y <- nmx_i$MortalityRate
+    xout <- seq(min_x, max_x, by = 1)
+    
+    int_val <- cubic_spline_interpolation(x, y, xout)
+    
+    int_val <- as.data.table(cbind(jj, ll, ii, xout, int_val))
+    setnames(int_val, old = c("jj", "ll", "ii", "xout", "int_val"), new = c('region1', 'sex', 'cause', 'gage_5', 'MortalityRate'))
+    
+  }
+  return(int_val)
+}
+
+
 categorize_age <- function(age,option="5year"){
   
   if(option=="5year"){
-    gedad <- cut(age,breaks = c(-Inf,1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,Inf),
-                 labels = c(0,1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80),
+    gedad <- cut(age,breaks = c(-Inf,1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,Inf),
+                 labels = c(0,1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95),
                  right = FALSE)
     
-  }else if("upc"){
+  }else if(option=="upc"){
     
     gedad <- cut(age,breaks = c(-Inf,1,5,15,19,45,50,55,60,65,70,75,Inf),
                      labels = c("01.0","02.1-4","03.5-14","04.15-18","05.19-44","06.45-49","07.50-54",
@@ -72,11 +105,6 @@ calculate_life_table <- function(mortality_data) {
   life_table <- as.data.table(life_table)
   return(life_table)
 }
-
-# Calculate the life table using the sample mortality data
-life_table_result <- calculate_life_table(mortality_data)
-print(life_table_result)
-
 
 
 

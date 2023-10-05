@@ -7,9 +7,12 @@ output: html_document
 wd <- "C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/AHAModelCol/"
 
 wd_c <- paste0(wd,"Code/")
+# load ad-hoc functions
+source(paste0(wd_c,"01Functions.R"))
+
 #wd_d <- paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/Data/")
 wd_dinpu <- paste0("C:/Users/wrgar/OneDrive - UW/02Work/AHAPiCol/Data/")
-wd_dproc <- paste0(wd,"/Data/")
+wd_dproc <- paste0(wd,"Data/")
 wd_r <- paste0(wd,"Resu/")
 
 #libraries
@@ -21,6 +24,7 @@ library(doParallel)
 library(readxl)
 library(knitr)
 library(plotly)
+library(kableExtra)
 knitr::opts_chunk$set(echo = TRUE)
 
 #Parameters
@@ -31,7 +35,7 @@ exr <- 3277
 
 ## Introduction
 
-We group CVD dagnostics accordinto the following ICD diagnostics
+We group CVD diagnostics according to the following ICD diagnostics
 
 ```{r dx , echo=FALSE}
 #dx <- fread(paste0(wd_inpu,"ICD10Codes.csv"))
@@ -58,9 +62,90 @@ knitr::include_graphics(paste0(wd_r,"population_source_2050.png"))
 
 This section shows the prevalence and infection rates raw data and estimation for 2019.
 
+
+### Prevalence rates
+
+We use claim microdata from the Contributory Regime to estimate prevalence rates for grouped causes. Patient with at least one claim with a Dx code in our ICD-10 is tagged. Prevalence numerator is 
+the sum of tagged patients and the denomitator is the average insured people in a year.
+
+
+
+```{r prev.agesex, echo=FALSE}
+prev_combined <- readRDS(file = paste0(wd_dproc,"PrevCombined2019.rds"))
+
+
+p <- ggplot(data=prev_combined, aes(x=gedad_upc, y=Prevalencia*1000, fill=cause)) +
+  geom_bar(stat="identity", position=position_dodge())
+p <- p + facet_wrap(vars(Sexo))
+p <- p +labs(title="Prevalence rates by age, cause and sex 2019",
+             x ="Age", y = "Prevalence per 1,000 population")
+p <- p + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggplotly(p)
+
+```
+
+We compare the estimates rates to the based rates of the published model. At a first sight,
+estimated rates are lower than model base rates: 
+
+```{r epi.bench.prev, echo=FALSE}
+prev_combined <- readRDS(file = paste0(wd_dproc,"PrevCombined2019.rds"))
+b_rates <- as.data.table(readRDS(file=paste0(wd_dinpu,"base_rates_2022_Col.rds")))
+b_rates <- b_rates[year==2019,]
+b_rates <- b_rates[age %in% c(45,50,55,60,65,70,75,80),]
+
+b_rates[,age_g:=categorize_age(age,option = 'upc')]
+
+benchmark <- merge(b_rates,prev_combined,by.y=c("gedad_upc","Sexo","cause"),by.x = c("age_g","sex","cause") ,all.x = T)
+
+benchmark <- benchmark[,c("cause","year","sex","age_g","PREVt0","Prevalencia"),with=FALSE]
+benchmark[,PREVt0:=PREVt0*1000]
+benchmark[,Prevalencia:=Prevalencia*1000]
+#knitr::kable()
+
+kbl(benchmark, caption = "Estimated Prevalence vs Published model 2019 per thousand", format = "html",longtable = TRUE) %>%
+  kable_paper("striped", full_width = T) %>%
+  scroll_box(width = "700px", height = "400px")
+
+
+```
+
 ### Mortality rates
 
 We use DANE's official population estimates and death counts for 2015-2019 to estimate death probabilities by cause, age and sex. Here some descriptive statistics:
+
+
+```{r epi.bench.mort, echo=FALSE}
+Nx <- as.data.table(readRDS(file = paste0(wd_dinpu,"PopCounts1519.rds")))
+Nx <-  Nx[,list(Nx=sum(population)),by=list(sex,gage_5)]
+
+nmx <- readRDS(file = paste0(wd_dinpu,"DeathCounts1519.rds"))
+nmx <- nmx[,list(Mx=sum(deaths)),by=list(sex,gage_5,cause)]  
+nmx_bg <- merge(Nx,nmx,by=c('sex','gage_5'),all.x = T)
+nmx_bg[,cause:=tolower(cause)]
+b_rates <- as.data.table(readRDS(file=paste0(wd_dinpu,"base_rates_2022_Col.rds")))
+b_rates <- b_rates[year==2019,]
+#b_rates <- b_rates[age %in% c(0,1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80),]
+
+benchmark <- merge(b_rates,nmx_bg,by.y=c("gage_5","sex","cause"),by.x = c("age","sex","cause") ,all.x = T)
+
+# benchmark[,bench.rates:=Mx/Nx.y*1000]
+# benchmark[,model.rates:=]
+
+benchmark <- benchmark[,c("cause","year","sex","age_g","age","Prevalencia"),with=FALSE]
+
+benchmark[,PREVt0:=PREVt0*1000]
+benchmark[,Prevalencia:=Prevalencia*1000]
+#knitr::kable()
+
+kbl(benchmark, caption = "Estimated Prevalence vs Published model 2019 per thousand", format = "html",longtable = TRUE) %>%
+  kable_paper("striped", full_width = T) %>%
+  scroll_box(width = "700px", height = "400px")
+
+
+```
+
+
 
 ### Male nqx
 
@@ -103,6 +188,28 @@ p <- p +labs(title="Mortality rates by region, age and cause (Female)",
 ggplotly(p)
 
 ```
+
+
+```{r epi.bench.nqx, echo=FALSE}
+Nx <- as.data.table(readRDS(file = paste0(wd_dinpu,"PopCounts1519.rds")))
+Nx <-  Nx[,list(Nx=sum(population)),by=list(region1,sex,gage_5)]
+
+nmx <- readRDS(file = paste0(wd_dinpu,"DeathCounts1519.rds"))
+nmx <- nmx[,list(Mx=sum(deaths)),by=list(region1,sex,gage_5,cause)]  
+nmx_bg <- merge(Nx,nmx,by=c('region1','sex','gage_5'),all.x = T)
+
+nmx_bg[,MortalityRate:=Mx/Nx]
+
+b_rates <- as.data.table(readRDS(file=paste0(wd_dinpu,"base_rates_2022_Col.rds")))
+b_rates <- b_rates[year==2019,]
+
+
+
+```
+
+
+
+
 <!-- Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot. -->
 
 ## Economic evaluation
@@ -114,7 +221,7 @@ This section shows the cost raw data and estimation for 2019. We estimate the av
 ```{r econ.cost.f, echo=FALSE}
 cost_iy_combined <- readRDS(file = paste0(wd_dproc,"CostCombined2019.rds"))
 
-print(paste("Exchange Rate USD/COP 2019",exr, sep= ""))
+print(paste("Exchange Rate USD/COP2019",exr, sep= " "))
 cost_iy_combined[,PromedioUSD:=Promedio/exr]
 
 p <- ggplot(data=cost_iy_combined[Sexo=='F'], aes(x=gedad_upc, y=PromedioUSD, fill=cause)) +
