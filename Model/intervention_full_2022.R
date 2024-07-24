@@ -163,6 +163,8 @@ data.in<-data.table(data.in%>%select(-age)%>%rename(age=Age.group))
 b_rates[, newcases:=0]
 #not adjusting IR because we're essentially doing that with bau coverage
 #b_rates[year>2019, IR:=IR*(0.997)^(year-2019)]
+
+
 #################################################################################################
 # As a function
 #################################################################################################
@@ -354,7 +356,7 @@ project.all <- function(Country, saltmet, salteff, saltyear2, drugcov){
 
 #test that it doesn't crash before running for ~15 mins
 #this takes ~15 seconds
-test<-project.all("Colombia",  "percent", 0.3, 2027, "p975")
+test<-project.all("Colombia",  "percent", 0.3, 2027, "ideal")
 p<-test%>%group_by(year, intervention)%>%
   summarise(dead = sum(dead),
             sick=sum(sick))
@@ -364,6 +366,13 @@ ggplot(p, aes(x=year, y=dead, color=intervention))+
 
 ggplot(p, aes(x=year, y=sick, color=intervention))+
   geom_point()
+
+fwrite(test,)
+
+save(test,file = paste0(wd_r,"BCA_BHealthOutcomes.rds"))
+
+fwrite(test,file = paste0(wd_r,"BCA_BHealthOutcomesIdeal.csv"))
+
 ######################################################################
 #run in parallel
 #need CPU w/ at at least 30 cores
